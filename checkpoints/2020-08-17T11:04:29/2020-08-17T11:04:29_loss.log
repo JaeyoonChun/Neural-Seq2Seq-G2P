@@ -1,0 +1,61 @@
+new best model
+Epoch: 01 | Time: 21m 53s | current lr : [0.005]
+	Train Loss: 1.291 | Train PPL:   3.637
+	 Val. Loss: 2.580 |  Val. PPL:  13.203
+new best model
+Epoch: 02 | Time: 21m 54s | current lr : [0.005]
+	Train Loss: 0.380 | Train PPL:   1.463
+	 Val. Loss: 2.325 |  Val. PPL:  10.225
+new best model
+Epoch: 03 | Time: 21m 51s | current lr : [0.0045000000000000005]
+	Train Loss: 0.322 | Train PPL:   1.380
+	 Val. Loss: 2.204 |  Val. PPL:   9.058
+new best model
+Epoch: 04 | Time: 21m 53s | current lr : [0.004050000000000001]
+	Train Loss: 0.283 | Train PPL:   1.328
+	 Val. Loss: 2.017 |  Val. PPL:   7.517
+Epoch: 05 | Time: 21m 55s | current lr : [0.0036450000000000007]
+	Train Loss: 0.241 | Train PPL:   1.272
+	 Val. Loss: 2.105 |  Val. PPL:   8.208
+Epoch: 06 | Time: 21m 52s | current lr : [0.0032805]
+	Train Loss: 0.227 | Train PPL:   1.255
+	 Val. Loss: 2.075 |  Val. PPL:   7.966
+new best model
+Epoch: 07 | Time: 21m 57s | current lr : [0.0029524500000000006]
+	Train Loss: 0.211 | Train PPL:   1.235
+	 Val. Loss: 1.887 |  Val. PPL:   6.601
+Epoch: 08 | Time: 21m 56s | current lr : [0.002657205]
+	Train Loss: 0.207 | Train PPL:   1.230
+	 Val. Loss: 1.943 |  Val. PPL:   6.983
+Epoch: 09 | Time: 21m 53s | current lr : [0.0023914845000000003]
+	Train Loss: 0.187 | Train PPL:   1.206
+	 Val. Loss: 1.985 |  Val. PPL:   7.279
+new best model
+Epoch: 10 | Time: 21m 55s | current lr : [0.0021523360500000006]
+	Train Loss: 0.170 | Train PPL:   1.186
+	 Val. Loss: 1.862 |  Val. PPL:   6.434
+Epoch: 11 | Time: 21m 58s | current lr : [0.0019371024450000004]
+	Train Loss: 0.157 | Train PPL:   1.170
+	 Val. Loss: 1.883 |  Val. PPL:   6.575
+new best model
+Epoch: 12 | Time: 21m 56s | current lr : [0.0017433922005000006]
+	Train Loss: 0.150 | Train PPL:   1.161
+	 Val. Loss: 1.818 |  Val. PPL:   6.162
+new best model
+Epoch: 13 | Time: 21m 53s | current lr : [0.0015690529804500003]
+	Train Loss: 0.138 | Train PPL:   1.148
+	 Val. Loss: 1.725 |  Val. PPL:   5.611
+new best model
+Epoch: 14 | Time: 21m 53s | current lr : [0.0014121476824050007]
+	Train Loss: 0.130 | Train PPL:   1.139
+	 Val. Loss: 1.721 |  Val. PPL:   5.591
+Epoch: 15 | Time: 21m 50s | current lr : [0.0012709329141645004]
+	Train Loss: 0.126 | Train PPL:   1.135
+	 Val. Loss: 1.843 |  Val. PPL:   6.319
+Epoch: 16 | Time: 21m 56s | current lr : [0.0011438396227480504]
+	Train Loss: 0.120 | Train PPL:   1.128
+	 Val. Loss: 1.745 |  Val. PPL:   5.729
+Epoch: 17 | Time: 21m 50s | current lr : [0.0010294556604732454]
+	Train Loss: 0.115 | Train PPL:   1.121
+	 Val. Loss: 1.795 |  Val. PPL:   6.018
+training session has been early stopped
