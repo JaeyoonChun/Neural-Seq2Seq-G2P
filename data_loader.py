@@ -33,14 +33,20 @@ class Librispeech(data.Dataset):
         return (train_data, val_data, test_data)
     
 class DataLoader:
-    def __init__(self, fpath, librispeech, batch_size, device):
+    def __init__(self, fpath, librispeech, batch_size, device, model_type):
         
-        self.G_FIELD = Field(init_token = '<sos>',
-                eos_token = '<eos>',
-                tokenize=(lambda x: x.split()))
-        self.P_FIELD = Field(init_token = '<sos>',
-                eos_token = '<eos>',
-                tokenize=(lambda x: x.split()))
+        self.batch_first = False
+        if model_type == 'transformer':
+            self.batch_first = True
+
+        self.G_FIELD = Field(init_token='<sos>',
+                eos_token='<eos>',
+                tokenize=(lambda x: x.split()),
+                batch_first=True)
+        self.P_FIELD = Field(init_token='<sos>',
+                eos_token='<eos>',
+                tokenize=(lambda x: x.split()),
+                batch_first=True)
 
         if not os.path.exists(os.path.join(fpath, 'sent_train.txt')):
             self.load_dataset(fpath)
@@ -49,7 +55,7 @@ class DataLoader:
         self.train_data, self.val_data, self.test_data = self.librispeech.splits(fpath, self.G_FIELD, self.P_FIELD)
         self.batch_size = batch_size
         self.device = device
-        
+        # print(vars(self.train_data.examples[0]))
         self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
         self.P_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
 
