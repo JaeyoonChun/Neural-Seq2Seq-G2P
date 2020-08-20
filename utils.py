@@ -49,7 +49,7 @@ def get_file(fpath, type):
     max_sequence_len = 0 # grapheme sequence의 최대 길이
 
     print("########  Start - Sentence  ########")
-
+    s = []
     for elem in data:
         file = None
         if 'file' in elem:
@@ -89,10 +89,13 @@ def get_file(fpath, type):
             print(p_text)
             exit()
             continue
+        # TODO sequence 길이대로 sort하여 
+        s.append(temp_G + "##" + temp_P + "\n")
+        # sent_out.write(temp_G + "##" + temp_P + "\n")
 
-        sent_out.write(temp_G + "##" + temp_P + "\n")
         count += 1
-
+    s = sorted(s, key=lambda x: len(x))
+    sent_out.writelines(s)
     sent_out.close()
     print(f"Done : sent_{type}.txt")
     print("count :", count)
