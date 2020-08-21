@@ -1,7 +1,28 @@
 import torch
 import torch.nn as nn
+import numpy as np
+from functools import partial
 
 # batch first residual connection/ dropout
+
+def get_angles(pos, i, d_model):
+    angle_rates = 1 / np.power(10000, (2 * (i//2)) / np.float32(d_model))
+    return pos * angle_rates
+
+
+def positional_encoding(position, d_model) -> np.array:
+    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
+                            np.arange(d_model)[np.newaxis, :],
+                            d_model)
+
+  # 배열의 짝수 인덱스(2i)에는 사인 함수 적용
+    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+
+  # 배열의 홀수 인덱스(2i+1)에는 코사인 함수 적용
+    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
+    pos_encoding = angle_rads[np.newaxis, ...]
+    return pos_encoding
+
 
 class Encoder(nn.Module):
     def __init__(self, input_dim, hid_dim, n_layers, n_heads, pf_dim, dropout, device, max_length=600):
@@ -10,7 +31,7 @@ class Encoder(nn.Module):
         self.device = device
 
         self.tok_embedding = nn.Embedding(input_dim, hid_dim)
-        self.pos_embedding = nn.Embedding(max_length, hid_dim)
+        self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
 
         self.layers = nn.ModuleList([EncoderLayer(hid_dim, n_heads, pf_dim, dropout, device) for _ in range(n_layers)])
 
@@ -25,11 +46,12 @@ class Encoder(nn.Module):
         batch_size = src.shape[0]
         src_len = src.shape[1]
 
-        pos = torch.arange(0, src_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
+        pos = self.pos_embedding(src_len)
+        pos = torch.from_numpy(pos).float().to(self.device)
         # pos = [batch size, src len]
         # 예를 들어 repeat(3, 4) dim=0 을 3번, dim=1 을 4번 반복하는 것
 
-        src = self.dropout((self.tok_embedding(src) * self.scale) + self.pos_embedding(pos))
+        src = self.dropout((self.tok_embedding(src) * self.scale) + pos)
         # src = [batch size, src len, hid dim]
 
         for layer in self.layers:
@@ -174,7 +196,7 @@ class Decoder(nn.Module):
         self.device = device
 
         self.tok_embedding = nn.Embedding(output_dim, hid_dim)
-        self.pos_embedding = nn.Embedding(max_length, hid_dim)
+        self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
         
         # TODO 찾아보기
         self.layers = nn.ModuleList([DecoderLayer(hid_dim, n_heads, pf_dim, dropout, device) for _ in range(n_layers)])
@@ -194,10 +216,11 @@ class Decoder(nn.Module):
         batch_size = trg.shape[0]
         trg_len = trg.shape[1]
 
-        pos = torch.arange(0, trg_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
+        pos = self.pos_embedding(trg_len)
+        pos = torch.from_numpy(pos).float().to(self.device)
         # pos = [batch size, trg len]
 
-        trg = self.dropout((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
+        trg = self.dropout((self.tok_embedding(trg) * self.scale) + pos)
         # trg = [batch size, trg len, hid dim]
 
         for layer in self.layers:
@@ -278,7 +301,7 @@ class Seq2Seq(nn.Module):
 
         trg_mask = trg_pad_mask & trg_sub_mask
         # trg_mask = [batch size, 1, trg len, trg len]
-        
+
         return trg_mask
 
     def forward(self, src, trg):
