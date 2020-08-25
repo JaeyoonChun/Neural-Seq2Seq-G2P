@@ -65,8 +65,7 @@ class EncoderLayer(nn.Module):
     def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
         super().__init__()
 
-        self.self_attn_layer_norm = nn.LayerNorm(hid_dim)
-        self.ff_layer_norm = nn.LayerNorm(hid_dim)
+        self.layer_norm = nn.LayerNorm(hid_dim)
 
         self.self_attn = MultiHeadAttentionLayer(hid_dim, n_heads, dropout, device)
         self.positionwise_ff = PositionwiseFeedForwardLayer(hid_dim, pf_dim, dropout)
@@ -81,14 +80,14 @@ class EncoderLayer(nn.Module):
         _src, _ = self.self_attn(src, src, src, src_mask)
 
         # dropout, residual connection and layer norm
-        src = self.self_attn_layer_norm(src + self.dropout(_src))
+        src = self.layer_norm(src + self.dropout(_src))
         # src = [batch size, src len, hid dim]
 
         # positionwise feedforward
         _src = self.positionwise_ff(src)
         
         # dropout, residual connection and layer norm
-        src = self.ff_layer_norm(src + self.dropout(_src))
+        src = self.layer_norm(src + self.dropout(_src))
         # src = [batch size, src len, hid dim]
 
         return src
@@ -238,9 +237,7 @@ class DecoderLayer(nn.Module):
     def __init__(self, hid_dim, n_heads, pf_dim, dropout, device):
         super().__init__()
 
-        self.self_attn_layer_norm = nn.LayerNorm(hid_dim)
-        self.enc_attn_layer_norm = nn.LayerNorm(hid_dim)
-        self.ff_layer_norm = nn.LayerNorm(hid_dim)
+        self.layer_norm = nn.LayerNorm(hid_dim)
         self.self_attn = MultiHeadAttentionLayer(hid_dim, n_heads, dropout, device)
         self.enc_attn = MultiHeadAttentionLayer(hid_dim, n_heads, dropout, device)
         self.positionwise_ff = PositionwiseFeedForwardLayer(hid_dim, pf_dim, dropout)
@@ -255,17 +252,17 @@ class DecoderLayer(nn.Module):
 
         _trg, _ = self.self_attn(trg, trg, trg, trg_mask)
 
-        trg = self.self_attn_layer_norm(trg + self.dropout(_trg))
+        trg = self.layer_norm(trg + self.dropout(_trg))
         # trg = [batch size, trg len, hid dim]
 
         _trg, attention = self.enc_attn(trg, enc_src, enc_src, src_mask)
 
-        trg = self.enc_attn_layer_norm(trg + self.dropout(_trg))
+        trg = self.layer_norm(trg + self.dropout(_trg))
         # trg = [batch size, trg len, hid dim]
 
         _trg = self.positionwise_ff(trg)
 
-        trg = self.ff_layer_norm(trg + self.dropout(_trg))
+        trg = self.layer_norm(trg + self.dropout(_trg))
         # trg = [batch size, trg len, hid dim]
         # attention = [batch size, n heads, trg len, src len]
 
