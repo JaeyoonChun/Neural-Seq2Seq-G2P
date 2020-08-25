@@ -12,6 +12,7 @@ import json
 import os
 import torch
 from tqdm import tqdm
+import re
 
 def evaluate(input_file, output_file='evaluation_result_conv.json'):
 
@@ -170,19 +171,19 @@ def translate(batch, dataset, model, device):
     '''
     transformer interaction show
     '''
-    model.eval()
+    # model.eval()
     src_mask = model.build_src_mask(batch.grapheme)
     
-    with torch.no_grad():
-        enc_src = model.encoder(batch.grapheme, src_mask)
+    # with torch.no_grad():
+    enc_src = model.encoder(batch.grapheme, src_mask)
     
     pho_idx = [dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.init_token]]
     for i in range(600):
         pho_tensor = torch.LongTensor(pho_idx).unsqueeze(0).to(device)
         trg_mask = model.build_trg_mask(pho_tensor)
-
-        with torch.no_grad():
-            output, _ = model.decoder(pho_tensor, enc_src, trg_mask, src_mask)
+        
+        # with torch.no_grad():
+        output, _ = model.decoder(pho_tensor, enc_src, trg_mask, src_mask)
 
         pred_token = output.argmax(2)[:,-1].item()
         pho_idx.append(pred_token)
@@ -194,35 +195,84 @@ def translate(batch, dataset, model, device):
     
     return pho_tokens[1:-1]
 
-def test(dataset, model, device):
-    # TODO 모델 인자
-    model.load_state_dict(torch.load('checkpoints/2020-08-20T08:57:21_transformer/model_best.pt'))
-    _, _, test_iter = dataset.build_iterator()
 
+def translate_sentence(sentence, dataset, model, device):
+
+    # model.eval()
+
+    tokens = list(re.sub(' ', '_', sentence))
+
+    tokens = [dataset.G_FIELD.init_token] + tokens + [dataset.G_FIELD.eos_token]
+    print(tokens)
+
+    src_indexes = [dataset.G_FIELD.vocab.stoi[token] for token in tokens]
+
+    src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
+
+    src_mask = model.build_src_mask(src_tensor)
+
+    # with torch.no_grad():
+    enc_src = model.encoder(src_tensor, src_mask)
+
+    trg_indexes = [dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.init_token]]
+
+    for i in range(250):
+
+        trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
+
+        trg_mask = model.build_trg_mask(trg_tensor)
+
+        # with torch.no_grad():
+        output, attention = model.decoder(
+            trg_tensor, enc_src, trg_mask, src_mask)
+
+        pred_token = output.argmax(2)[:, -1].item()
+
+        trg_indexes.append(pred_token)
+
+        if pred_token == dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.eos_token]:
+            break
+
+    trg_tokens = [dataset.P_FIELD.vocab.itos[i] for i in trg_indexes]
+
+    return trg_tokens[1:-1]
+
+
+def test(dataset, model, device, model_path):
+    # TODO 모델 인자
+    model.load_state_dict(torch.load(f'{model_path}/model_best.pt'))
+    # _, _, test_iter = dataset.build_iterator()
+    while(1):
+        sent = input('입력: ')
+        output = translate_sentence(sent, dataset, model, device)
+        print(' '.join(output))
     out = []
     # for i, batch in enumerate(test_iter):
-    for batch in tqdm(test_iter):
-        g_field = batch.dataset.fields['grapheme']
-        p_field = batch.dataset.fields['phoneme']
-        gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
-        pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
-        pred = translate(batch, dataset, model, device)
+    # # for batch in tqdm(test_iter):
+    #     g_field = batch.dataset.fields['grapheme']
+    #     p_field = batch.dataset.fields['phoneme']
+    #     gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
+    #     pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
+    #     pred = translate(batch, dataset, model, device)
         
-        data = {}
-        data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
-        data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
-        data['predicted'] = ' '.join(pred)
+    #     # data = {}
+    #     # data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
+    #     # data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
+    #     # data['predicted'] = ' '.join(pred)
 
-        out.append(data)
-        # print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
-        # ' '.join([p_field.vocab.itos[p] for p in pho]),
-        # ' '.join(pred)))
+    #     # out.append(data)
+    #     print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
+    #     ' '.join([p_field.vocab.itos[p] for p in pho]),
+    #     ' '.join(pred)))
 
-        # if i == 10:
-        #     break
+    #     if i == 3:
+    #         break
 
-    with open('checkpoints/2020-08-20T08:57:21_transformer/test_out.json', 'w', encoding='utf-8') as wf:
-        json.dump(out, wf, ensure_ascii=False, indent='\t')
+    # # with open(f'{model_path}/test_out.json', 'w', encoding='utf-8') as wf:
+    # #     json.dump(out, wf, ensure_ascii=False, indent='\t')
+
+    # # evaluate(f'{model_path}/test_out.json')
+
 
 
 if __name__ == "__main__":
