@@ -37,7 +37,7 @@ def conv_english_to_code(text, g_or_p='p', split_token='_'):
     else:
         return text
 
-def get_file(fpath, type):        
+def get_sent_file(fpath, type):        
     with open(os.path.join(fpath, f'librispeech_{type}-clean.json'), "r", encoding='utf-8') as f:
         data = json.load(f)
 
