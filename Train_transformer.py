@@ -41,8 +41,8 @@ def train_epoch(model, iterator, optimizer, criterion, clip):
         
         output = output.contiguous().view(-1, output_dim)
         trg = trg[:,1:].contiguous().view(-1)
-        #trg = [batch size * (trg len - 1)]
         #output = [batch size * (trg len - 1), output dim]
+        #trg = [batch size * (trg len - 1)]
         
         loss = criterion(output, trg)
         
@@ -105,13 +105,13 @@ def train(dataset, model, epochs, model_type):
     TRG_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
     criterion = nn.CrossEntropyLoss(ignore_index = TRG_PAD_IDX)
     
+    best_valid_loss = float('inf')
+    train_iter, val_iter, _ = dataset.build_iterator()
+
     if not os.path.exists(f'checkpoints/'):
         os.mkdir(f'checkpoints/')
     if not os.path.exists(f'checkpoints/{TIMESTAMP}_{model_type}'):
         os.mkdir(f'checkpoints/{TIMESTAMP}_{model_type}')
-    
-    best_valid_loss = float('inf')
-    train_iter, val_iter, _ = dataset.build_iterator()
 
     file = f'checkpoints/{TIMESTAMP}_{model_type}/{TIMESTAMP}_loss.log'
     with open(file, 'w', encoding='utf-8') as wf:
@@ -163,8 +163,8 @@ def train(dataset, model, epochs, model_type):
                 break
 
 # TODO
-def test(dataset, model):
-    model.load_state_dict(torch.load('checkpoints/2020-08-17T10:04:51/model_best.pt'))
+def test_temp(dataset, model, model_path):
+    model.load_state_dict(torch.load(f'{model_path}/model_best.pt'))
     _, _, test_iterator = dataset.build_iterator()
     TRG_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
 
