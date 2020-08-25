@@ -4,7 +4,7 @@ import numpy as np
 import random
 import os
 
-from Train_transformer import train
+from Train_transformer import train, test_temp
 from Test_transformer import test
 from transformer import Encoder, Decoder, Seq2Seq
 from data_loader import Librispeech, DataLoader
@@ -21,8 +21,8 @@ def build_model(dataset, device):
     INPUT_DIM = len(dataset.G_FIELD.vocab)
     OUTPUT_DIM = len(dataset.P_FIELD.vocab)
     HID_DIM = 256
-    ENC_LAYERS = 3
-    DEC_LAYERS = 3
+    ENC_LAYERS = 6
+    DEC_LAYERS = 6
     ENC_HEADS = 8
     DEC_HEADS = 8
     ENC_PF_DIM = 512
@@ -43,7 +43,7 @@ def build_model(dataset, device):
 
     return model
 
-def main(fpath, batch_size, mode, model_type):
+def main(fpath, batch_size, mode, model_type, model_path):
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -53,7 +53,11 @@ def main(fpath, batch_size, mode, model_type):
     if mode == 'train':
         train(dataset, model, 100, model_type)
     if mode == 'test':
-        test(dataset, model, device)
+        test(dataset, model, device, model_path)
+    if mode == 't':
+        test_temp(dataset, model, model_path)
+
 
 if __name__ == '__main__':
-    main('data/', 50, 'test', 'transformer')
+    model_path = 'checkpoints/2020-08-25T19:18:53_transformer'
+    main('data/', 32, 'train', 'transformer', model_path)
