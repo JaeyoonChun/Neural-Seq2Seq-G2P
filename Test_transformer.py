@@ -13,6 +13,7 @@ import os
 import torch
 from tqdm import tqdm
 import re
+from functools import partial
 
 def evaluate(input_file, output_file='evaluation_result_conv.json'):
 
@@ -33,6 +34,8 @@ def evaluate(input_file, output_file='evaluation_result_conv.json'):
     Pr = 'predicted'
     Gr_p = 'original_pause'
     Pr_p = 'predicted_pause'
+
+
 
     with open(input_file, "r", encoding='utf-8') as f:
         data = json.load(f)
@@ -163,6 +166,30 @@ def evaluate(input_file, output_file='evaluation_result_conv.json'):
         data_w = json.dumps(output_list, indent=4, sort_keys=True)
         data_w = bytes(data_w, 'utf-8').decode('unicode_escape')
         fw.write(data_w)
+        _print = partial(print, file=fw, flush=True)
+
+        
+        _print('\n### 단어단위 성능 - 중복미허용 ###')
+        _print("Words: %d" % len(input_dict))
+        _print("Errors: %d" % errors)
+        _print("WER: %.3f" % (float(errors) / len(input_dict)))
+        _print("Accuracy: %.3f" % float(1 - (errors / len(input_dict))))
+
+        _print('\n### 단어단위 성능 - 중복허용 ###')
+        _print('Words:', word_total_count)
+        _print('Errors:', word_error_count)
+        _print('WER: %.3f' % (word_error_count / word_total_count))
+        _print('Accuracy: %.3f' % (1 - (word_error_count / word_total_count)))
+
+        _print('\n### 음소단위 성능 ###')
+        _print('Phones:', phone_total_count)
+        _print('Errors:', phone_error_count)
+        _print('PER: %.3f' % (phone_error_count / phone_total_count))
+        _print('Accuracy: %.3f' % (1 - (phone_error_count / phone_total_count)))
+
+        _print('\n### 기타 ###')
+        _print('Total sentences :', total_count)
+        _print('Length errors :', length_error_count)
 
     print('\nFile saved to :', output_path)
 
@@ -172,7 +199,7 @@ def translate(batch, dataset, model, device):
     transformer interaction show
     '''
     # model.eval()
-    src_mask = model.build_src_mask(batch.grapheme)
+    src_mask = model.make_src_mask(batch.grapheme)
     
     # with torch.no_grad():
     enc_src = model.encoder(batch.grapheme, src_mask)
@@ -180,7 +207,7 @@ def translate(batch, dataset, model, device):
     pho_idx = [dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.init_token]]
     for i in range(600):
         pho_tensor = torch.LongTensor(pho_idx).unsqueeze(0).to(device)
-        trg_mask = model.build_trg_mask(pho_tensor)
+        trg_mask = model.make_trg_mask(pho_tensor)
         
         # with torch.no_grad():
         output, _ = model.decoder(pho_tensor, enc_src, trg_mask, src_mask)
@@ -190,7 +217,6 @@ def translate(batch, dataset, model, device):
 
         if pred_token == dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.eos_token]:
             break
-
     pho_tokens = [dataset.P_FIELD.vocab.itos[i] for i in pho_idx]
     
     return pho_tokens[1:-1]
@@ -206,11 +232,14 @@ def translate_sentence(sentence, dataset, model, device):
     print(tokens)
 
     src_indexes = [dataset.G_FIELD.vocab.stoi[token] for token in tokens]
-
+    print(dataset.G_FIELD.vocab.stoi)
+    
+    print(src_indexes)
     src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
-
+    print(src_tensor)
+    
     src_mask = model.build_src_mask(src_tensor)
-
+    print(src_mask)
     # with torch.no_grad():
     enc_src = model.encoder(src_tensor, src_mask)
 
@@ -221,7 +250,7 @@ def translate_sentence(sentence, dataset, model, device):
         trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
 
         trg_mask = model.build_trg_mask(trg_tensor)
-
+        print(trg_mask)
         # with torch.no_grad():
         output, attention = model.decoder(
             trg_tensor, enc_src, trg_mask, src_mask)
@@ -232,7 +261,10 @@ def translate_sentence(sentence, dataset, model, device):
 
         if pred_token == dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.eos_token]:
             break
-
+    print(dataset.P_FIELD.vocab.stoi)
+    print(dataset.P_FIELD.vocab.itos)
+    print(trg_indexes)
+    
     trg_tokens = [dataset.P_FIELD.vocab.itos[i] for i in trg_indexes]
 
     return trg_tokens[1:-1]
@@ -241,41 +273,41 @@ def translate_sentence(sentence, dataset, model, device):
 def test(dataset, model, device, model_path):
     # TODO 모델 인자
     model.load_state_dict(torch.load(f'{model_path}/model_best.pt'))
-    # _, _, test_iter = dataset.build_iterator()
-    while(1):
-        sent = input('입력: ')
-        output = translate_sentence(sent, dataset, model, device)
-        print(' '.join(output))
+    _, _, test_iter = dataset.build_iterator()
+    # while(1):
+    #     sent = input('입력: ')
+    #     output = translate_sentence(sent, dataset, model, device)
+    #     print(' '.join(output))
     out = []
-    # for i, batch in enumerate(test_iter):
-    # # for batch in tqdm(test_iter):
-    #     g_field = batch.dataset.fields['grapheme']
-    #     p_field = batch.dataset.fields['phoneme']
-    #     gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
-    #     pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
-    #     pred = translate(batch, dataset, model, device)
+    for i, batch in enumerate(test_iter):
+    # for batch in tqdm(test_iter):
+        g_field = batch.dataset.fields['grapheme']
+        p_field = batch.dataset.fields['phoneme']
+        gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
+        pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
+        pred = translate(batch, dataset, model, device)
         
-    #     # data = {}
-    #     # data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
-    #     # data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
-    #     # data['predicted'] = ' '.join(pred)
+        data = {}
+        data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
+        data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
+        data['predicted'] = ' '.join(pred)
+        out.append(data)
 
-    #     # out.append(data)
-    #     print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
-    #     ' '.join([p_field.vocab.itos[p] for p in pho]),
-    #     ' '.join(pred)))
+        print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
+        ' '.join([p_field.vocab.itos[p] for p in pho]),
+        ' '.join(pred)))
 
-    #     if i == 3:
-    #         break
+        if i == 3:
+            break
 
-    # # with open(f'{model_path}/test_out.json', 'w', encoding='utf-8') as wf:
-    # #     json.dump(out, wf, ensure_ascii=False, indent='\t')
+    with open(f'{model_path}/test_out.json', 'w', encoding='utf-8') as wf:
+        json.dump(out, wf, ensure_ascii=False, indent='\t')
 
-    # # evaluate(f'{model_path}/test_out.json')
+    evaluate(f'{model_path}/test_out.json')
 
 
 
 if __name__ == "__main__":
-    input_file = 'checkpoints/2020-08-20T08:57:21_transformer/test_out.json'
+    input_file = 'checkpoints/2020-08-26T13:37:07_transformer/test_out.json'
     # input_file = 'model/eng/evaluation_result_iter_13500.json'
     evaluate(input_file)
