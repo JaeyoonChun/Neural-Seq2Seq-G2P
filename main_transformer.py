@@ -15,20 +15,20 @@ np.random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 def build_model(dataset, device):
     INPUT_DIM = len(dataset.G_FIELD.vocab)
     OUTPUT_DIM = len(dataset.P_FIELD.vocab)
-    HID_DIM = 256
+    HID_DIM = 512
     ENC_LAYERS = 3
     DEC_LAYERS = 3
     ENC_HEADS = 8
     DEC_HEADS = 8
-    ENC_PF_DIM = 512
-    DEC_PF_DIM = 512
-    ENC_DROPOUT = 0.1
-    DEC_DROPOUT = 0.1
+    ENC_PF_DIM = 2048
+    DEC_PF_DIM = 2048
+    ENC_DROPOUT = 0.3
+    DEC_DROPOUT = 0.3
 
     enc = Encoder(INPUT_DIM, HID_DIM, ENC_LAYERS, ENC_HEADS, ENC_PF_DIM, ENC_DROPOUT, device)
     dec = Decoder(OUTPUT_DIM, HID_DIM, DEC_LAYERS, DEC_HEADS, DEC_PF_DIM, DEC_DROPOUT, device)
@@ -65,5 +65,5 @@ def main(fpath, batch_size, mode, model_type, model_path):
 
 
 if __name__ == '__main__':
-    model_path = 'checkpoints/2020-08-26T23:36:19_transformer'
+    model_path = 'checkpoints/2020-08-28T21:45:21_transformer'
     main('data/', 32, 'train', 'transformer', model_path)

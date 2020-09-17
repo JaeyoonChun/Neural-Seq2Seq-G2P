@@ -100,7 +100,7 @@ def epoch_time(start_time, end_time):
 def train(dataset, model, epochs, model_type):
 
     # TODO lr 인자로 받기
-    optimizer = optim.Adam(model.parameters(), lr=0.0005)
+    optimizer = optim.Adam(model.parameters(), lr=0.0005, weight_decay=0.0001)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)    
     TRG_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
     criterion = nn.CrossEntropyLoss(ignore_index = TRG_PAD_IDX)

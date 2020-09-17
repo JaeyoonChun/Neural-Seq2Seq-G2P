@@ -102,3 +102,31 @@ def get_sent_file(fpath, type):
 
     print('max_sequence_len :', max_sequence_len)
     print("########  Complete - Sentence  ########")
+
+def get_word_file(fpath,type):
+    with open(os.path.join(fpath, f'librispeech_{type}-clean.json'), "r", encoding='utf-8') as f:
+        data = json.load(f)
+
+    max_G_len = 0 # grapheme sequence의 최대 길이
+    max_P_len = 0 # grapheme sequence의 최대 길이
+
+    s= []
+    with open(os.path.join(fpath, f'word_{type}.txt'), "w", encoding='utf-8') as f:
+        for elem in data:
+            gra = ' _ '.join(elem['G'].split())
+            pho = elem['P']
+            
+            if len(gra.split()) > max_G_len:
+                max_G_len = len(gra.split())
+            if len(pho.split('_')) > max_P_len:
+                max_P_len = len(pho.split('_'))
+
+            s.append(gra+'##'+pho+'\n')
+        
+        s = sorted(s, key=lambda x:len(x))
+        f.writelines(s)
+    print('max_G_len :', max_G_len)
+    print('max_P_len :', max_P_len)
+    print("########  Complete - word  ########")
+
+    

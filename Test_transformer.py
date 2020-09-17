@@ -205,7 +205,7 @@ def translate(batch, dataset, model, device):
     enc_src = model.encoder(batch.grapheme, src_mask)
     
     pho_idx = [dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.init_token]]
-    for i in range(600):
+    for i in range(250):
         pho_tensor = torch.LongTensor(pho_idx).unsqueeze(0).to(device)
         trg_mask = model.make_trg_mask(pho_tensor)
         
@@ -238,7 +238,7 @@ def translate_sentence(sentence, dataset, model, device):
     src_tensor = torch.LongTensor(src_indexes).unsqueeze(0).to(device)
     print(src_tensor)
     
-    src_mask = model.build_src_mask(src_tensor)
+    src_mask = model.make_src_mask(src_tensor)
     print(src_mask)
     # with torch.no_grad():
     enc_src = model.encoder(src_tensor, src_mask)
@@ -249,7 +249,7 @@ def translate_sentence(sentence, dataset, model, device):
 
         trg_tensor = torch.LongTensor(trg_indexes).unsqueeze(0).to(device)
 
-        trg_mask = model.build_trg_mask(trg_tensor)
+        trg_mask = model.make_trg_mask(trg_tensor)
         print(trg_mask)
         # with torch.no_grad():
         output, attention = model.decoder(
@@ -279,26 +279,25 @@ def test(dataset, model, device, model_path):
     #     output = translate_sentence(sent, dataset, model, device)
     #     print(' '.join(output))
     out = []
-    for i, batch in enumerate(test_iter):
-    # for batch in tqdm(test_iter):
+    # for i, batch in enumerate(test_iter):
+    for batch in tqdm(test_iter):
         g_field = batch.dataset.fields['grapheme']
         p_field = batch.dataset.fields['phoneme']
         gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
         pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
         pred = translate(batch, dataset, model, device)
-        
         data = {}
         data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
         data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
         data['predicted'] = ' '.join(pred)
         out.append(data)
 
-        print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
-        ' '.join([p_field.vocab.itos[p] for p in pho]),
-        ' '.join(pred)))
+    #     # print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
+    #     # ' '.join([p_field.vocab.itos[p] for p in pho]),
+    #     # ' '.join(pred)))
 
-        if i == 3:
-            break
+    #     # if i == 3:
+    #     #     break
 
     with open(f'{model_path}/test_out.json', 'w', encoding='utf-8') as wf:
         json.dump(out, wf, ensure_ascii=False, indent='\t')
