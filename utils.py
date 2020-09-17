@@ -37,7 +37,7 @@ def conv_english_to_code(text, g_or_p='p', split_token='_'):
     else:
         return text
 
-def get_file(fpath, type):        
+def get_sent_file(fpath, type):        
     with open(os.path.join(fpath, f'librispeech_{type}-clean.json'), "r", encoding='utf-8') as f:
         data = json.load(f)
 
@@ -49,7 +49,7 @@ def get_file(fpath, type):
     max_sequence_len = 0 # grapheme sequence의 최대 길이
 
     print("########  Start - Sentence  ########")
-
+    s = []
     for elem in data:
         file = None
         if 'file' in elem:
@@ -89,13 +89,44 @@ def get_file(fpath, type):
             print(p_text)
             exit()
             continue
+        # TODO sequence 길이대로 sort하여 
+        s.append(temp_G + "##" + temp_P + "\n")
+        # sent_out.write(temp_G + "##" + temp_P + "\n")
 
-        sent_out.write(temp_G + "##" + temp_P + "\n")
         count += 1
-
+    s = sorted(s, key=lambda x: len(x))
+    sent_out.writelines(s)
     sent_out.close()
     print(f"Done : sent_{type}.txt")
     print("count :", count)
 
     print('max_sequence_len :', max_sequence_len)
     print("########  Complete - Sentence  ########")
+
+def get_word_file(fpath,type):
+    with open(os.path.join(fpath, f'librispeech_{type}-clean.json'), "r", encoding='utf-8') as f:
+        data = json.load(f)
+
+    max_G_len = 0 # grapheme sequence의 최대 길이
+    max_P_len = 0 # grapheme sequence의 최대 길이
+
+    s= []
+    with open(os.path.join(fpath, f'word_{type}.txt'), "w", encoding='utf-8') as f:
+        for elem in data:
+            gra = ' _ '.join(elem['G'].split())
+            pho = elem['P']
+            
+            if len(gra.split()) > max_G_len:
+                max_G_len = len(gra.split())
+            if len(pho.split('_')) > max_P_len:
+                max_P_len = len(pho.split('_'))
+
+            s.append(gra+'##'+pho+'\n')
+        
+        s = sorted(s, key=lambda x:len(x))
+        f.writelines(s)
+    print('max_G_len :', max_G_len)
+    print('max_P_len :', max_P_len)
+    print("########  Complete - word  ########")
+
+    

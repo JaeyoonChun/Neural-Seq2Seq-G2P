@@ -1,7 +1,8 @@
 import torchtext.data as data
 from torchtext.data import Field, BucketIterator, Iterator
-from utils import get_file
+from utils import get_word_file
 import os
+import re
 
 class Librispeech(data.Dataset):    
     def __init__(self, data_lines, G_FIELD, P_FIELD):
@@ -15,9 +16,9 @@ class Librispeech(data.Dataset):
 
     @classmethod
     def splits(cls, fpath, g_field, p_field):
-        with open(fpath+'sent_train.txt', 'r', encoding='utf-8') as train_f,\
-        open(fpath+'sent_dev.txt', 'r', encoding='utf-8') as val_f,\
-        open(fpath+'sent_test.txt', 'r', encoding='utf-8') as test_f:
+        with open(fpath+'word_train.txt', 'r', encoding='utf-8') as train_f,\
+        open(fpath+'word_dev.txt', 'r', encoding='utf-8') as val_f,\
+        open(fpath+'word_test.txt', 'r', encoding='utf-8') as test_f:
             train_lines = train_f.readlines()
             val_lines = val_f.readlines()
             test_lines = test_f.readlines()
@@ -33,38 +34,66 @@ class Librispeech(data.Dataset):
         return (train_data, val_data, test_data)
     
 class DataLoader:
-    def __init__(self, fpath, librispeech, batch_size, device):
+    def __init__(self, fpath, librispeech, batch_size, device, model_type):
         
-        self.G_FIELD = Field(init_token = '<sos>',
-                eos_token = '<eos>',
-                tokenize=(lambda x: x.split()))
-        self.P_FIELD = Field(init_token = '<sos>',
-                eos_token = '<eos>',
-                tokenize=(lambda x: x.split()))
+        self.batch_first = False
+        if model_type == 'transformer':
+            self.batch_first = True
+        
+        self.pat_space = re.compile(r'(?<=[A-Z0-9])\s(?=[A-Z0-9])')
+        self.pat_replace_space = re.compile('#')
 
-        if not os.path.exists(os.path.join(fpath, 'sent_train.txt')):
+        self.G_FIELD = Field(init_token='<sos>',
+                eos_token='<eos>',
+                tokenize=(lambda x: x.split()),
+                batch_first=True)
+        self.P_FIELD = Field(init_token='<sos>',
+                eos_token='<eos>',
+                tokenize=self.phoneme_tokenizer,
+                batch_first=True)
+
+        if not os.path.exists(os.path.join(fpath, 'word_train.txt')):
             self.load_dataset(fpath)
-        
         self.librispeech = librispeech
         self.train_data, self.val_data, self.test_data = self.librispeech.splits(fpath, self.G_FIELD, self.P_FIELD)
         self.batch_size = batch_size
         self.device = device
-        
+        print(vars(self.train_data.examples[20]))
+        print(vars(self.val_data.examples[20]))
+
         self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
         self.P_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
+        print(len(self.G_FIELD.vocab))
+        print(len(self.P_FIELD.vocab))
 
-    
     def load_dataset(self, fpath):
         for type in 'train dev test'.split():
-            get_file(fpath, type)
-
+            get_word_file(fpath, type)
+    
+    def phoneme_tokenizer(self, pho):
+        pho = self.pat_space.sub('#', pho).split()
+        return [self.pat_replace_space.sub(' ', w) for w in pho]
 
     def build_iterator(self):
-        train_iter, val_iter = BucketIterator.splits(
-            (self.train_data, self.val_data),
-            batch_size=self.batch_size,
-            device=self.device
-        )
+        train_iter = Iterator(self.train_data, batch_size=self.batch_size, train=True, device=self.device, shuffle=False)
+        val_iter = Iterator(self.val_data, batch_size=self.batch_size, train=False, device=self.device, shuffle=False)
         test_iter = Iterator(self.test_data, batch_size=1, train=False, device=self.device)
+
+        # batch = next(iter(train_iter))
+        # print(batch.grapheme)
+        # print(batch.grapheme.shape)
+        # print(batch.phoneme)
+        # print(batch.phoneme.shape)
+        # print(' '.join([self.G_FIELD.vocab.itos[i] for i in batch.grapheme.view(-1).numpy()]))
+        # print(' '.join([self.P_FIELD.vocab.itos[i] for i in batch.phoneme.view(-1).numpy()]))       
+
+        # batch = next(iter(val_iter))
+        # print(batch.grapheme)
+        # print(batch.grapheme.shape)
+        # print(batch.phoneme)
+        # print(batch.phoneme.shape)
+        # print(' '.join([self.G_FIELD.vocab.itos[i] for i in batch.grapheme.view(-1).numpy()]))
+        # print(' '.join([self.P_FIELD.vocab.itos[i] for i in batch.phoneme.view(-1).numpy()]))     
+        # raise Exception('dd')
         return (train_iter, val_iter, test_iter)
 
