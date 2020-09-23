@@ -141,3 +141,10 @@ dmypy.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 ignore/
+
+checkpoints/
+data/
+sentence_bert/
+*.pt
+.vector_cache/
+.vscode/
