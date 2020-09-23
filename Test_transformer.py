@@ -14,6 +14,7 @@ import torch
 from tqdm import tqdm
 import re
 from functools import partial
+from pprint import pprint
 
 def evaluate(input_file, output_file='evaluation_result_conv.json'):
 
@@ -50,11 +51,17 @@ def evaluate(input_file, output_file='evaluation_result_conv.json'):
             # pause symbol 무시하고 성능계산
             p_sentence_tmp = ' '.join([p for p in p_sentence.split() if p != '/' and p != ','])
             hyp_sentence_tmp = ' '.join([h for h in hyp_sentence.split() if h != '/' and h != ','])
-            g_words = g_sentence.replace(' ', '').split('_')
+            g_words = g_sentence.split()
             p_words = p_sentence_tmp.split(' _ ')
             hyp_words = hyp_sentence_tmp.split(' _ ')
             p_words_with_pause = p_sentence.split(' _ ')
             hyp_words_with_pause = hyp_sentence.split(' _ ') 
+            # print(g_words)
+            # print(p_words)
+            # print(hyp_words)
+            # print(p_words_with_pause)
+            # print(hyp_words_with_pause)
+            # print()
 
             org_pause_sentence = []
             pred_pause_sentence = []
@@ -86,6 +93,12 @@ def evaluate(input_file, output_file='evaluation_result_conv.json'):
                 if len(p_word) > 0 and p_word[-1] in ['/', ',']:
                     pred_pause_sentence.append(hyp_words_with_pause[i][-1])
 
+                # print('pause')
+                # print(org_pause_sentence)
+                # print(pred_pause_sentence)
+                # print()
+
+                # raise Exception
                 word_total_count += 1
                 phone_total_count += len(p_phones)
 
@@ -272,13 +285,15 @@ def translate_sentence(sentence, dataset, model, device):
 
 def test(dataset, model, device, model_path):
     # TODO 모델 인자
-    model.load_state_dict(torch.load(f'{model_path}/model_best.pt'))
-    _, _, test_iter = dataset.build_iterator()
+    checkpoint = torch.load(f'{model_path}/model.pt')
+    model.load_state_dict(checkpoint['model_stat_dict'])
+    _, _, test_iter, _, _ = dataset.build_iterator()
     # while(1):
     #     sent = input('입력: ')
     #     output = translate_sentence(sent, dataset, model, device)
     #     print(' '.join(output))
     out = []
+    i = 0
     # for i, batch in enumerate(test_iter):
     for batch in tqdm(test_iter):
         g_field = batch.dataset.fields['grapheme']
@@ -287,17 +302,19 @@ def test(dataset, model, device, model_path):
         pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
         pred = translate(batch, dataset, model, device)
         data = {}
+        # data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra]).replace(' ##', '')
         data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
-        data['phoneme'] = ' '.join([p_field.vocab.itos[p] for p in pho])
-        data['predicted'] = ' '.join(pred)
+        data['phoneme'] = ' _ '.join([p_field.vocab.itos[p] for p in pho])
+        data['predicted'] = ' _ '.join(pred)
         out.append(data)
-
-    #     # print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
-    #     # ' '.join([p_field.vocab.itos[p] for p in pho]),
-    #     # ' '.join(pred)))
-
-    #     # if i == 3:
-    #     #     break
+        
+        # print("> {}\n= {}\n< {}\n".format(' '.join([g_field.vocab.itos[g] for g in gra]),
+        # ' '.join([p_field.vocab.itos[p] for p in pho]),
+        # ' '.join(pred)))
+        # i += 1
+        # if i == 50:
+        #     pprint(out)
+        #     break
 
     with open(f'{model_path}/test_out.json', 'w', encoding='utf-8') as wf:
         json.dump(out, wf, ensure_ascii=False, indent='\t')
