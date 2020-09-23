@@ -3,6 +3,13 @@ import os
 import re
 import sys
 
+import logging
+import logging.config
+import numpy as np
+import torch
+import random
+import yaml
+
 g_list = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", 
           "t", "u", "v", "w", "x", "y", "z", "'", "<unk>"]
 
@@ -129,4 +136,34 @@ def get_word_file(fpath,type):
     print('max_P_len :', max_P_len)
     print("########  Complete - word  ########")
 
+def init_logger(args):
+    # logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+    #                     datefmt='%m/%d/%Y %H:%M:%S',
+    #                     level=logging.INFO)
+    file = f'{args.version}'
+    if not os.path.exists(f'./checkpoints/{file}/'):
+        os.mkdir(f'./checkpoints/{file}/')    
+    config = yaml.load(open('./logger.yml'), Loader=yaml.FullLoader)
+    config['handlers']['file_info']['filename'] = f'./checkpoints/{file}/train.log'
+    logging.config.dictConfig(config)
+    os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda_num
+
+   
+def load_tokenizer(args):
+    return AutoTokenizer.from_pretrained(args.bert_type)
+
+def set_seeds():
+    SEED = 1234
+    random.seed(SEED)
+    np.random.seed(SEED)
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.backends.cudnn.deterministic = True
+    SEED = 1234
     
+def format_time(end, start):
+    elapsed_time = end - start
+    elapsed_mins = int(elapsed_time / 60)
+    elapsed_secs = int(elapsed_time - (elapsed_mins * 60))
+
+    return elapsed_mins, elapsed_secs
