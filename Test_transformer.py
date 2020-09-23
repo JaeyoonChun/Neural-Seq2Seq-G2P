@@ -15,6 +15,8 @@ from tqdm import tqdm
 import re
 from functools import partial
 from pprint import pprint
+import logging
+logger = logging.getLogger(__name__)
 
 def evaluate(input_file, output_file='evaluation_result_conv.json'):
 

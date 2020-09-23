@@ -22,5 +22,9 @@ loggers:
       - console
       - file_info
     propagate: True
-
+  Test_transformer:  
+    level: INFO
+    handlers:
+      - console
+    propagate: True
 
