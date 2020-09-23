@@ -12,7 +12,7 @@ import logging
 import pandas as pd
 logger = logging.getLogger(__name__)
 
-def train_epoch(model, iterator, optimizer, criterion, clip):
+def train_epoch(model, iterator, optimizer, criterion, clip, args):
     
     model.train()
     
@@ -40,15 +40,17 @@ def train_epoch(model, iterator, optimizer, criterion, clip):
         #trg = [batch size * (trg len - 1)]
         
         loss = criterion(output, trg)
-        
+
+        if args.gradient_accumulation_steps > 1:
+            loss = loss / args.gradient_accumulation_steps
+
         loss.backward()
-        
-        torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
-        
-        optimizer.step()
-        
         epoch_loss += loss.item()
-        step += 1
+        
+        if (i + 1) % args.gradient_accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+            optimizer.step()
+            step += 1
         
     return epoch_loss / data_len, step
 
@@ -97,6 +99,7 @@ def train(dataset, model, args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)    
+    # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2, factor=0.5, verbose=True)    
     TRG_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
     criterion = nn.CrossEntropyLoss(ignore_index = TRG_PAD_IDX)
     
@@ -125,7 +128,7 @@ def train(dataset, model, args):
         
         start_time = time.time()
         
-        train_loss, steps = train_epoch(model, train_iter, optimizer, criterion, args.max_grad_norm)
+        train_loss, steps = train_epoch(model, train_iter, optimizer, criterion, args.max_grad_norm, args)
         valid_loss = evaluate_epoch(model, val_iter, criterion)
         t_steps += steps
         training_stats.append(
@@ -141,10 +144,12 @@ def train(dataset, model, args):
         
         if epoch >= 2:
             lr_scheduler.step()
+            # lr_scheduler.step(valid_loss)
 
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
-            save_model(args, model, optimizer, best_valid_loss, epoch)
+            if not args.do_lr:
+                save_model(args, model, optimizer, best_valid_loss, epoch)
             early_cnt = 0
         else:
             early_cnt += 1
