@@ -92,7 +92,8 @@ class DataLoader:
             get_word_file(fpath, type)
     
     def phoneme_tokenizer(self, pho):
-        return pho.split(' _ ')
+        # return pho.split(' _ ')
+        return pho.split()
         # pho = self.pat_space.sub('#', pho).split()
         # return [self.pat_replace_space.sub(' ', w) for w in pho]
 
