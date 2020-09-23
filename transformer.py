@@ -4,21 +4,21 @@ import numpy as np
 from functools import partial
 
 def get_angles(pos, i, d_model):
-    angle_rates = 1 / np.power(10000, (2 * (i//2)) / np.float32(d_model))
+    angle_rates = 1 / torch.pow(10000, (2 * (i//2)) / torch.tensor(d_model, dtype=torch.float32))
     return pos * angle_rates
 
 
-def positional_encoding(position, d_model) -> np.array:
-    angle_rads = get_angles(np.arange(position)[:, np.newaxis],
-                            np.arange(d_model)[np.newaxis, :],
+def positional_encoding(position, d_model):
+    angle_rads = get_angles(torch.arange(position).unsqueeze(1),
+                            torch.arange(d_model).unsqueeze(0),
                             d_model)
 
   # 배열의 짝수 인덱스(2i)에는 사인 함수 적용
-    angle_rads[:, 0::2] = np.sin(angle_rads[:, 0::2])
+    angle_rads[:, 0::2] = torch.sin(angle_rads[:, 0::2])
 
   # 배열의 홀수 인덱스(2i+1)에는 코사인 함수 적용
-    angle_rads[:, 1::2] = np.cos(angle_rads[:, 1::2])
-    pos_encoding = angle_rads[np.newaxis, ...]
+    angle_rads[:, 1::2] = torch.cos(angle_rads[:, 1::2])
+    pos_encoding = angle_rads.unsqueeze(0)
     return pos_encoding
 
 class Encoder(nn.Module):
@@ -30,14 +30,15 @@ class Encoder(nn.Module):
                  pf_dim,
                  dropout, 
                  device,
-                 max_length = 200):
+                 max_length = 200,
+                 vectors=None):
         super().__init__()
 
         self.device = device
-        
-        self.tok_embedding = nn.Embedding(input_dim, hid_dim)
-        # self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
-        self.pos_embedding = nn.Embedding(max_length, hid_dim)
+        # self.tok_embedding = nn.Embedding(input_dim, hid_dim)
+        self.tok_embedding = nn.Embedding.from_pretrained(vectors, freeze=False)
+        self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
+        # self.pos_embedding = nn.Embedding(max_length, hid_dim)
         
         self.layers = nn.ModuleList([EncoderLayer(hid_dim, 
                                                   n_heads, 
@@ -56,14 +57,14 @@ class Encoder(nn.Module):
         #src_mask = [batch size, src len]
         batch_size = src.shape[0]
         src_len = src.shape[1]
-        
-        # pos = self.pos_embedding(src_len)
+
+        pos = self.pos_embedding(src_len).to(self.device)
         # pos = torch.from_numpy(pos).float().to(self.device)
-        pos = torch.arange(0, src_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
+        # pos = torch.arange(0, src_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
         #pos = [batch size, src len]
-        
-        # src = self.dropout((self.tok_embedding(src) * self.scale) + pos)
-        src = self.dropout((self.tok_embedding(src) * self.scale) + self.pos_embedding(pos))
+
+        src = self.dropout((self.tok_embedding(src) * self.scale) + pos)
+        # src = self.dropout((self.tok_embedding(src) * self.scale) + self.pos_embedding(pos))
         
         #src = [batch size, src len, hid dim]
         
@@ -229,8 +230,8 @@ class Decoder(nn.Module):
         self.device = device
         
         self.tok_embedding = nn.Embedding(output_dim, hid_dim)
-        # self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
-        self.pos_embedding = nn.Embedding(max_length, hid_dim)
+        self.pos_embedding = partial(positional_encoding, d_model=hid_dim)
+        # self.pos_embedding = nn.Embedding(max_length, hid_dim)
         
         self.layers = nn.ModuleList([DecoderLayer(hid_dim, 
                                                   n_heads, 
@@ -255,13 +256,13 @@ class Decoder(nn.Module):
         batch_size = trg.shape[0]
         trg_len = trg.shape[1]
         
-        # pos = self.pos_embedding(trg_len)
+        pos = self.pos_embedding(trg_len).to(self.device)
         # pos = torch.from_numpy(pos).float().to(self.device)
-        pos = torch.arange(0, trg_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
+        # pos = torch.arange(0, trg_len).unsqueeze(0).repeat(batch_size, 1).to(self.device)
         #pos = [batch size, trg len]
             
-        # trg = self.dropout((self.tok_embedding(trg) * self.scale) + pos)
-        trg = self.dropout((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
+        trg = self.dropout((self.tok_embedding(trg) * self.scale) + pos)
+        # trg = self.dropout((self.tok_embedding(trg) * self.scale) + self.pos_embedding(pos))
                 
         #trg = [batch size, trg len, hid dim]
         
