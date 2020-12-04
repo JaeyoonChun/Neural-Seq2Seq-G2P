@@ -1,0 +1,6 @@
+torch==1.6.0
+tqdm
+pandas
+torchtext==0.7.0
+pyyaml
+transformers==3.0.2
