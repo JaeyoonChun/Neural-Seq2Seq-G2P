@@ -93,7 +93,7 @@ if __name__ == '__main__':
     parser.add_argument("--early_cnt",  type=int, default=3, help="Whether to run training.")
     parser.add_argument("--version", type=str, default='trained_0.00079', help="Train a sentiment classifier for the model 4")
     parser.add_argument("--pretrain_vector", type=str, default='GloVe', help="Train a sentiment classifier for the model 4")
-    parser.add_argument("--cuda_num", type=str, default='1', help="Train a sentiment classifier for the model 4")
+    parser.add_argument("--cuda_num", type=str, default='0', help="Set CUDA_VISIBLE_DEVICES to use GPU device.")
 
     args = parser.parse_args()
 
