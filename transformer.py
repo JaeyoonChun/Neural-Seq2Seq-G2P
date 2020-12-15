@@ -337,7 +337,7 @@ class DecoderLayer(nn.Module):
         
         return trg, attention
 
-class Seq2Seq(nn.Module):
+class G2P(nn.Module):
     def __init__(self, 
                  encoder, 
                  decoder, 
@@ -404,3 +404,5 @@ class Seq2Seq(nn.Module):
         
         return output, attention
 
+    def _generate(self):
+        beam = Beam(self.config.beam_size, cuda=self.config.cuda)

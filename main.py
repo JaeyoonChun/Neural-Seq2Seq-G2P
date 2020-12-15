@@ -6,7 +6,7 @@ import os
 
 from Train_transformer import train
 from Test_transformer import test
-from transformer import Encoder, Decoder, Seq2Seq
+from transformer import Encoder, Decoder, G2P
 from data_loader import Librispeech, DataLoader
 from utils import init_logger, set_seeds
 import argparse
@@ -29,7 +29,7 @@ def build_model(dataset, device):
 
     G_PAD_IDX = dataset.G_FIELD.vocab.stoi[dataset.G_FIELD.pad_token]
     P_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
-    model = Seq2Seq(enc, dec, G_PAD_IDX, P_PAD_IDX, device)
+    model = G2P(enc, dec, G_PAD_IDX, P_PAD_IDX, device)
 
     def initialize_weights(m):
         if hasattr(m, 'weight') and m.weight.dim() > 1:
