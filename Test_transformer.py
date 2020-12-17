@@ -209,7 +209,7 @@ def evaluate(input_file, output_file='evaluation_result_conv.json'):
     print('\nFile saved to :', output_path)
 
 
-def translate(batch, dataset, model, device):
+def translate_Transformer(batch, dataset, model, device):
     '''
     transformer interaction show
     '''
@@ -236,6 +236,28 @@ def translate(batch, dataset, model, device):
     
     return pho_tokens[1:-1]
 
+def translate_LSTM(batch, dataset, model, device):
+    '''
+    biLSTM interaction show
+    '''
+    model.eval()
+    with torch.no_grad():
+        encoder_outputs, h, c = model.encoder(batch.grapheme)
+    
+    pho_idx = [dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.init_token]]
+    for i in range(256):
+        pho_tensor = torch.LongTensor(pho_idx).to(device)
+       
+        with torch.no_grad():
+            o, h, c = model.decoder(pho_tensor[-1:], h, c, encoder_outputs)
+        pred_token = o.argmax(1)
+        pho_idx.append(pred_token)
+        if pred_token == dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.eos_token]:
+            break
+
+    pho_tokens = [dataset.P_FIELD.vocab.itos[i] for i in pho_idx]
+    
+    return pho_tokens[1:-1]
 
 def translate_sentence(sentence, dataset, model, device):
 
@@ -285,7 +307,7 @@ def translate_sentence(sentence, dataset, model, device):
     return trg_tokens[1:-1]
 
 
-def test(dataset, model, device, model_path):
+def test(dataset, model, device, model_path, args):
     # TODO 모델 인자
     checkpoint = torch.load(f'{model_path}/model.pt')
     model.load_state_dict(checkpoint['model_stat_dict'])
@@ -302,7 +324,11 @@ def test(dataset, model, device, model_path):
         p_field = batch.dataset.fields['phoneme']
         gra = batch.grapheme.squeeze(0).data.tolist()[1:-1]
         pho = batch.phoneme.squeeze(0).data.tolist()[1:-1]
-        pred = translate(batch, dataset, model, device)
+        if args.Transformer:
+            pred = translate_Transformer(batch, dataset, model, device)
+        elif args.LSTM:
+            pred = translate_LSTM(batch, dataset, model, device)
+
         data = {}
         # data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra]).replace(' ##', '')
         data['grapheme'] = ' '.join([g_field.vocab.itos[g] for g in gra])
