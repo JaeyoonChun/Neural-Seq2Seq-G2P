@@ -61,11 +61,11 @@ class DataLoader:
         self.G_FIELD = Field(init_token='<sos>',
                 eos_token='<eos>',
                 tokenize=lambda x:x.split(),
-                batch_first=True)
+                batch_first=self.batch_first)
         self.P_FIELD = Field(init_token='<sos>',
                 eos_token='<eos>',
                 tokenize=self.phoneme_tokenizer,
-                batch_first=True)
+                batch_first=self.batch_first)
         # if not os.path.exists(os.path.join(fpath, 'word_train.txt')):
         #     self.load_dataset(fpath)
         self.librispeech = librispeech
@@ -75,8 +75,8 @@ class DataLoader:
         print(vars(self.train_data.examples[20]))
         print(vars(self.val_data.examples[20]))
 
-        # self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
-        self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data, vectors=GloVe(name='6B', dim=300))
+        self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
+        # self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data, vectors=GloVe(name='6B', dim=300))
         # self.G_FIELD.build_vocab(self.train_data, self.val_data, self.test_data, vectors=FastText(language='en'))
 
         self.P_FIELD.build_vocab(self.train_data, self.val_data, self.test_data)
