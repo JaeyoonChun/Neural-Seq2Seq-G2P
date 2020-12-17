@@ -27,34 +27,43 @@ def train_epoch(model, iterator, optimizer, criterion, clip, args):
         batch = next(iterator)
         src = batch.grapheme
         trg = batch.phoneme
-        
+        #trg = [trg len, batch size]
+
         optimizer.zero_grad()
+        if args.LSTM:
+            output = model(src, trg)
+            output_dim = output.shape[-1]
+            #output = [trg len, batch size, output dim]
+                    
+            output = output[1:].view(-1, output_dim)
+            trg = trg[1:].view(-1)
 
-        output, _ = model(src, trg[:, :-1])
-
-        output_dim = output.shape[-1]
+        elif args.Transformer:
+            output, _ = model(src, trg[:, :-1])
+            output_dim = output.shape[-1]
+            output = output.contiguous().view(-1, output_dim)
+            trg = trg[:,1:].contiguous().view(-1)
         
-        output = output.contiguous().view(-1, output_dim)
-        trg = trg[:,1:].contiguous().view(-1)
-        #output = [batch size * (trg len - 1), output dim]
-        #trg = [batch size * (trg len - 1)]
-        
+        #output = [(trg len - 1) * batch size, output dim]
+        #trg = [(trg len - 1) * batch size]
+    
         loss = criterion(output, trg)
-
         if args.gradient_accumulation_steps > 1:
             loss = loss / args.gradient_accumulation_steps
 
         loss.backward()
         epoch_loss += loss.item()
-        
         if (i + 1) % args.gradient_accumulation_steps == 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), clip)
+        
             optimizer.step()
             step += 1
         
+ 
+        
     return epoch_loss / data_len, step
 
-def evaluate_epoch(model, iterator, criterion):
+def evaluate_epoch(model, iterator, criterion, args):
     
     model.eval()
     
@@ -72,17 +81,19 @@ def evaluate_epoch(model, iterator, criterion):
             src = batch.grapheme
             trg = batch.phoneme
 
-            output, _ = model(src, trg[:,:-1]) #turn off teacher forcing
-            #trg = [batch size, trg_len]
-            #output = [batch size, trg len-1, output dim]
+            if args.LSTM:
+                output = model(src, trg, 0)
+                output_dim = output.shape[-1]
+                #output = [trg len, batch size, output dim]
+                        
+                output = output[1:].view(-1, output_dim)
+                trg = trg[1:].view(-1)
 
-            output_dim = output.shape[-1]
-            
-            output = output.contiguous().view(-1, output_dim)
-            trg = trg[:,1:].contiguous().view(-1)
-            #trg = [batch size * (trg len - 1)]
-            #output = [batch size * (trg len - 1), output dim]
-
+            elif args.Transformer:
+                output, _ = model(src, trg[:, :-1])
+                output_dim = output.shape[-1]
+                output = output.contiguous().view(-1, output_dim)
+                trg = trg[:,1:].contiguous().view(-1)
             loss = criterion(output, trg)
             
             epoch_loss += loss.item()
@@ -99,10 +110,9 @@ def train(dataset, model, args):
 
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)    
-    # lr_scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=2, factor=0.5, verbose=True)    
     TRG_PAD_IDX = dataset.P_FIELD.vocab.stoi[dataset.P_FIELD.pad_token]
     criterion = nn.CrossEntropyLoss(ignore_index = TRG_PAD_IDX)
-    
+
     best_valid_loss = float('inf')
     train_iter, val_iter, _, train_data_len, val_data_len = dataset.build_iterator()
     if args.max_steps > 0:
@@ -124,6 +134,7 @@ def train(dataset, model, args):
     logger.info(f"  pretrain vector = {args.pretrain_vector}")
     t_steps = 0
     training_stats = []
+
     for epoch in range(args.num_train_epochs):
         
         start_time = time.time()
@@ -144,28 +155,25 @@ def train(dataset, model, args):
         
         if epoch >= 2:
             lr_scheduler.step()
-            # lr_scheduler.step(valid_loss)
 
         if valid_loss < best_valid_loss:
             best_valid_loss = valid_loss
-            if not args.do_lr:
-                save_model(args, model, optimizer, best_valid_loss, epoch)
+            save_model(args, model, optimizer, best_valid_loss, epoch)
             early_cnt = 0
         else:
             early_cnt += 1
+
         logger.info(f'\nEpoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s | current lr : {lr_scheduler.get_lr()}')
         logger.info(f"  total_steps = {t_steps}")
         logger.info(f"  train_loss = {train_loss:.4f} | 'Train_PPL' = {math.exp(train_loss):.3f} ")
         logger.info(f"  valid_loss = {valid_loss:.4f} | 'Val_PPL' = {math.exp(valid_loss):.3f}")
     
-        
-        if  early_cnt > args.early_cnt - 1:
+        if early_cnt > args.early_cnt - 1:
             logger.info('training session has been early stopped')
             df_stats = pd.DataFrame(data=training_stats, )
             df_stats = df_stats.set_index('epoch')
             df_stats.to_csv(f'./checkpoints/{args.version}/stats.csv', sep='\t', index=True)
             break
-
 def save_model(args, model, optimizer, loss, epoch):
     fpath = f'./checkpoints/{args.version}/'
     if not os.path.exists(fpath):
