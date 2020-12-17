@@ -4,8 +4,8 @@ import numpy as np
 import random
 import os
 
-from Train_transformer import train
-from Test_transformer import test
+from Train import train
+from Test import test
 from data_loader import Librispeech, DataLoader
 from utils import init_logger, set_seeds
 import argparse
