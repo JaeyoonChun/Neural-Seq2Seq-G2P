@@ -403,6 +403,3 @@ class G2P(nn.Module):
         #attention = [batch size, n heads, trg len, src len]
         
         return output, attention
-
-    def _generate(self):
-        beam = Beam(self.config.beam_size, cuda=self.config.cuda)
