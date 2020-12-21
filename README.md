@@ -15,16 +15,8 @@ pip install -r requirements.txt
 **train**
 
 ```
-python main.py --do_train --version [save_model_path] --[LSTM or Transformer]
+python main.py --model_mode [LSTM or Transformer]
 ```
-
-**test**
-
-```
-python main.py --do_test --version [save_model_path] --[LSTM or Transformer]
-```
-
-
 
 ## Copyright
 
