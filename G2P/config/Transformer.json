@@ -9,5 +9,7 @@
     "enc_dropout": 0.1,
     "dec_dropout": 0.1,
     "max_length": 200,
-    "vectors": false
+    "vectors": false,
+    "param_init_xavier": true,
+    "param_init": 0.1
 }
