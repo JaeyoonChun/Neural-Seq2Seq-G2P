@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
 from functools import partial
 
 class MultiHeadAttentionLayer(nn.Module):

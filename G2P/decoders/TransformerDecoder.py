@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
 from functools import partial
 from G2P.modules import MultiHeadAttentionLayer
 from G2P.modules import PositionwiseFeedforwardLayer

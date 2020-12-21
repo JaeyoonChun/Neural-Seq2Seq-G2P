@@ -3,8 +3,6 @@ import torch.optim as optim
 import torch.nn as nn
 
 import math
-from functools import partial
-from tqdm import trange
 import datetime
 import time
 import os

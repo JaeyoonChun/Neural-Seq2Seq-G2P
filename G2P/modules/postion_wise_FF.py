@@ -1,7 +1,5 @@
 import torch
 import torch.nn as nn
-import numpy as np
-from functools import partial
 
 class PositionwiseFeedforwardLayer(nn.Module):
     def __init__(self, hid_dim, pf_dim, dropout):
