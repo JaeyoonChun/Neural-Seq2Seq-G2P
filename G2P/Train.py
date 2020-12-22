@@ -16,8 +16,11 @@ class Trainer:
     def __init__(self, train_args, opt, model, fields):
         self.args = train_args
         self.opt = opt
-        self.model = model
-        self.model.cuda()
+
+        if train_args.world_size > 1:
+            model = nn.DataParallel(model)
+        self.model = model # TODO custom parallel model 구현
+
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
         self.lr_scheduler = optim.lr_scheduler.ExponentialLR(self.optimizer, gamma= 0.99) 
 
@@ -32,7 +35,8 @@ class Trainer:
             self.args.num_train_epochs = self.args.max_steps // (len(train_dataloader) // self.args.gradient_accumulation_steps) + 1
         else:
             t_total = len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs
-      
+        self.args.logging_steps = len(train_dataloader) // self.args.gradient_accumulation_steps
+        self.args.save_steps = self.args.logging_steps
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_dataloader))
         logger.info("  Num Epochs = %d", self.args.num_train_epochs)
@@ -169,10 +173,10 @@ class Trainer:
         fpath = self.args.save_model_dir
         if not os.path.exists(fpath):
             os.makedirs(fpath)
-
+        state_dict = self.model.state_dict() if self.args.world_size==1 else self.model.module.state_dict()
         torch.save({
             'epoch': epoch,
-            'model_stat_dict': self.model.state_dict(),
+            'model_stat_dict': state_dict,
             'optimizer_state_dict': self.optimizer.state_dict(),
             'loss': loss
             }, os.path.join(fpath, 'model.pt'))
