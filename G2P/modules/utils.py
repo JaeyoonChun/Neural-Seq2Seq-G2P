@@ -37,8 +37,9 @@ def set_seeds():
     torch.backends.cudnn.deterministic = True
 
 def load_device(args):
+  if args.world_size == 1:
     os.environ['CUDA_VISIBLE_DEVICES'] = f'{args.device_num}'
-    return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  return torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def init_logger():
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
