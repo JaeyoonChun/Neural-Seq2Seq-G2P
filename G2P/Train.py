@@ -18,11 +18,15 @@ class Trainer:
         self.opt = opt
 
         if train_args.world_size > 1:
-            model = nn.DataParallel(model)
+            if opt.model_type == 'LSTM':
+                model = nn.DataParallel(model, dim=1)
+            elif opt.model_type == 'Transformer':
+                model = nn.DataParallel(model, dim=0)
+
         self.model = model # TODO custom parallel model 구현
 
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
-        self.lr_scheduler = optim.lr_scheduler.ExponentialLR(self.optimizer, gamma= 0.99) 
+        self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma= 0.99) 
 
         p_field = fields['phoneme']
         TRG_PAD_IDX = p_field.vocab.stoi[p_field.pad_token]

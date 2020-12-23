@@ -34,7 +34,7 @@ class TransformerDecoder(nn.Module):
         
         self.dropout = nn.Dropout(dropout)
         
-        self.scale = torch.sqrt(torch.FloatTensor([hid_dim])).to(device)
+        self.hid_dim = hid_dim
         self.device = device
     @classmethod
     def from_args(cls, args, fields, device):
@@ -66,8 +66,8 @@ class TransformerDecoder(nn.Module):
         
         pos = self.pos_embedding(trg_len).to(self.device)
         #pos = [batch size, trg len]
-            
-        trg = self.dropout((self.tok_embedding(trg) * self.scale) + pos)
+        scale = torch.sqrt(torch.FloatTensor([self.hid_dim])).to(trg.device)
+        trg = self.dropout((self.tok_embedding(trg) * scale) + pos)
                 
         #trg = [batch size, trg len, hid dim]
         
