@@ -8,5 +8,6 @@
     "teacher_forcing_ratio": 0.5,
     "vectors": false,
     "n_layers": 1,
-    "param_init": 0.1
+    "param_init": 0.02,
+    "param_init_xavier": false
 }
