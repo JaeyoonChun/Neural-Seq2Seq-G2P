@@ -20,7 +20,6 @@ class MultiHeadAttentionLayer(nn.Module):
         
         self.dropout = nn.Dropout(dropout)
         
-        self.scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(device)
         
     def forward(self, query, key, value, mask = None):
         
@@ -45,8 +44,8 @@ class MultiHeadAttentionLayer(nn.Module):
         #Q = [batch size, n heads, query len, head dim]
         #K = [batch size, n heads, key len, head dim]
         #V = [batch size, n heads, value len, head dim]
-                
-        energy = torch.matmul(Q, K.permute(0, 1, 3, 2)) / self.scale
+        scale = torch.sqrt(torch.FloatTensor([self.head_dim])).to(query.device)
+        energy = torch.matmul(Q, K.permute(0, 1, 3, 2)) / scale
         
         #energy = [batch size, n heads, query len, key len]
         

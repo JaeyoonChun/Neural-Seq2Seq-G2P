@@ -11,7 +11,7 @@ class LSTMEncoder(nn.Module):
     self.n_layers = n_layers
     self.embedding = nn.Embedding(input_dim, emb_dim)
     
-    self.rnn = nn.LSTM(emb_dim, enc_hid_dim, bidirectional=True)
+    self.rnn = nn.LSTM(emb_dim, enc_hid_dim, n_layers, bidirectional=True)
     self.fc = nn.Linear(enc_hid_dim*2, dec_hid_dim)
     self.dropout = nn.Dropout(dropout)
   
@@ -47,4 +47,4 @@ class LSTMEncoder(nn.Module):
     # hidden = [batch size, dec hid dim]
     # cell = [batch size, dec hid dim]
 
-    return outputs, hidden, cell    
+    return (outputs, hidden, cell)    
