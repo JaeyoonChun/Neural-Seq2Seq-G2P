@@ -25,9 +25,6 @@ class Trainer:
 
         self.model = model # TODO custom parallel model 구현
 
-        self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
-        self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma= 0.99) 
-
         p_field = fields['phoneme']
         TRG_PAD_IDX = p_field.vocab.stoi[p_field.pad_token]
         self.criterion = nn.CrossEntropyLoss(ignore_index = TRG_PAD_IDX)   
@@ -39,8 +36,14 @@ class Trainer:
             self.args.num_train_epochs = self.args.max_steps // (len(train_dataloader) // self.args.gradient_accumulation_steps) + 1
         else:
             t_total = len(train_dataloader) // self.args.gradient_accumulation_steps * self.args.num_train_epochs
-        self.args.logging_steps = len(train_dataloader) // self.args.gradient_accumulation_steps
+        
+        epoch_step_size = len(train_dataloader) // self.args.gradient_accumulation_steps
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight_decay)
+        self.lr_scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=epoch_step_size, gamma= 0.9) 
+    
+        self.args.logging_steps = epoch_step_size
         self.args.save_steps = self.args.logging_steps
+        
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", len(train_dataloader))
         logger.info("  Num Epochs = %d", self.args.num_train_epochs)
@@ -100,6 +103,7 @@ class Trainer:
                     if self.args.logging_steps > 0 and global_step % self.args.logging_steps==0:
                         valid_loss = self.evaluate(valid_dataloader)
                         epochs.write(f"  global steps = {global_step}")
+                        epochs.write(f"  training loss = {epoch_loss / (step+1)}")
                         epochs.write(f"  valid loss = {valid_loss}")
                         epochs.write(f'  learning rate = {self.lr_scheduler.get_last_lr()}') # TODO
 
