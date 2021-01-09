@@ -11,5 +11,5 @@
     "max_length": 200,
     "vectors": false,
     "param_init_xavier": true,
-    "param_init": 0.02
+    "param_init_he": false
 }
