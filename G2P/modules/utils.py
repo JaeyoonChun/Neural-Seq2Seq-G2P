@@ -2,6 +2,8 @@ import torch
 import random
 import os
 import logging
+import pickle
+import json
 
 def get_angles(pos, i, d_model):
   angle_rates = 1 / torch.pow(10000, (2 * (i//2)) / torch.tensor(d_model, dtype=torch.float32))
@@ -45,3 +47,74 @@ def init_logger():
     logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                         datefmt='%m/%d/%Y %H:%M:%S',
                         level=logging.INFO)
+
+def normalize(src, trg):
+    src = src.rstrip('\n')
+    trg = trg.rstrip('\n')
+
+    src = ''.join(list(src.replace(' ', '_')))
+    trg = ' '.join(list(trg.replace(' ', '_')))
+
+    return src, trg
+
+def dataset_process(args):
+  data_dir = args.data_dir
+  with open(os.path.join(data_dir, f"{args.data_type}_trainset.pkl"), 'rb') as f,\
+    open(os.path.join(data_dir, f"{args.data_type}_testset.pkl"), 'rb') as fw:
+    trainset = pickle.load(f)
+    testset = pickle.load(fw)
+    
+  total = len(trainset)
+  ratio = (2, 1, 1)
+
+  ratio = [total//sum(ratio) * r for r in ratio]
+  print(ratio)
+  train, valid, test = [], [], []
+  for r, (topic, lines) in zip(ratio, trainset.items()):
+    if r == 0:
+      continue
+    
+    lines = lines[:r]
+    valid += [normalize(src=l['new_src'], trg=l['new_trg']) for l in lines[:len(lines)//10]]
+    train += [normalize(src=l['new_src'], trg=l['new_trg']) for l in lines[len(lines)//10:]]
+
+  for topic, lines in testset.items():      
+    test += [normalize(src=l['new_src'], trg=l['new_trg']) for l in lines]
+      
+  train = sorted(train, key=lambda x: len(x[0]))
+  valid = sorted(valid, key=lambda x: len(x[0]))
+  test = sorted(test, key=lambda x: len(x[0]))
+
+  train_save = []
+  for src, trg in train:
+    train_save.append(
+      {
+          "G": src,
+          "P": trg
+      }
+    )
+  
+  val_save = []
+  for src, trg in valid:
+    val_save.append(
+      {
+        "G": src,
+        "P": trg
+      }
+    )
+
+  test_save = []
+  for src, trg in test:
+    test_save.append(
+      {
+        "G": src,
+        "P": trg
+      }
+    )
+
+  with open(os.path.join(data_dir, f"{args.data_type}_train.json"), 'w', encoding='utf-8') as f,\
+    open(os.path.join(data_dir, f"{args.data_type}_dev.json"), 'w', encoding='utf-8') as fw,\
+    open(os.path.join(data_dir, f"{args.data_type}_test.json"), 'w', encoding='utf-8') as ft:
+    json.dump(train_save, f, ensure_ascii=False, indent='\t')
+    json.dump(val_save, fw, ensure_ascii=False, indent='\t')
+    json.dump(test_save, ft, ensure_ascii=False, indent='\t')

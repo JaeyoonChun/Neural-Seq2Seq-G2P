@@ -6,6 +6,7 @@ import json
 
 from transformers import AutoTokenizer
 import logging
+import pickle
 logger = logging.getLogger(__name__)
 
 def build_dataset(opt, args, device, vectors):
@@ -29,7 +30,7 @@ def build_dataset(opt, args, device, vectors):
             tokenize=P_tokenizer,
             batch_first=batch_first)
     fields = dict([('grapheme', G_FIELD), ('phoneme', P_FIELD)])
-    train_data, val_data, test_data = Librispeech.splits(args.data_dir, G_FIELD, P_FIELD)
+    train_data, val_data, test_data = Librispeech.splits(args.data_dir, args.data_type, G_FIELD, P_FIELD)
     
     if vectors:
         from torchtext.vocab import GloVe
@@ -60,10 +61,10 @@ class Librispeech(data.Dataset):
         super().__init__(examples, fields)
 
     @classmethod
-    def splits(cls, fpath, G_FIELD, P_FIELD):
-        with open(fpath+'/librispeech_train-clean.json', 'r', encoding='utf-8') as train_f,\
-        open(fpath+'/librispeech_dev-clean.json', 'r', encoding='utf-8') as val_f,\
-        open(fpath+'/librispeech_test-clean.json', 'r', encoding='utf-8') as test_f:
+    def splits(cls, fpath, data_type, G_FIELD, P_FIELD):
+        with open(fpath+f'/{data_type}_train.json', 'r', encoding='utf-8') as train_f,\
+        open(fpath+f'/{data_type}_dev.json', 'r', encoding='utf-8') as val_f,\
+        open(fpath+f'/{data_type}_test.json', 'r', encoding='utf-8') as test_f:
             train_data = json.load(train_f)
             val_data = json.load(val_f)
             test_data = json.load(test_f)
@@ -77,4 +78,3 @@ class Librispeech(data.Dataset):
         logger.info(f"Number of testing examples: {len(test_dataset.examples)}")
 
         return (train_dataset, val_dataset, test_dataset)
-    
