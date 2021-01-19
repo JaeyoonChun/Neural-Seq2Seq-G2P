@@ -5,7 +5,7 @@
     "eval_batch_size": 64,
     "learning_rate": 0.0005,
     "num_train_epochs": 10,
-    "weight_decay": 0.01,
+    "weight_decay": 0,
     "adam_epsilon": 1e-8,
     "warmup_steps": 0,
     "logging_steps": 1,
