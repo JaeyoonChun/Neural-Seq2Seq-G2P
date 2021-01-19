@@ -1,6 +1,7 @@
 {
     "save_model_dir": "G2P/ckpt/LSTM",
     "data_dir": "./data",
+    "data_type": "n2w",
     "train_batch_size": 64,
     "eval_batch_size": 64,
     "learning_rate": 0.0005,
