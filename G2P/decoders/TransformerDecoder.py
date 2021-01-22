@@ -51,7 +51,9 @@ class TransformerDecoder(nn.Module):
 
     def forward(self, trg, enc_src, **kwargs):
         src = kwargs['src']
-        trg = trg[:, :-1]
+        predict = kwargs['predict']
+        if not predict:
+            trg = trg[:, :-1]
         
         src_mask = sequence_mask(src)
         trg_mask = self.make_trg_mask(trg)
