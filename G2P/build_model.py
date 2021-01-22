@@ -9,10 +9,10 @@ def build_encoder(model_type, model_args, fields, device):
 def build_decoder(model_type, model_args, fields, device):
     return Decoders_list[model_type].from_args(model_args, fields, device)
 
-def build_model(model_args, opt, fields, device):
+def build_model(model_args, opt, fields, device, predict=False):
     encoder = build_encoder(opt.model_type, model_args, fields, device)
     decoder = build_decoder(opt.model_type, model_args, fields, device)
-    model = G2P(encoder=encoder, decoder=decoder)
+    model = G2P(encoder=encoder, decoder=decoder, predict=predict)
     
     if model_args.param_init_he:
         for p in model.parameters():
