@@ -11,6 +11,7 @@ from attrdict import AttrDict
 from G2P.modules.utils import set_seeds, load_device, init_logger
 from G2P.build_model import build_model
 from G2P.data_loader import build_dataset
+import torch.nn.functional as F
 import argparse
 
 logger = logging.getLogger(__name__)
@@ -19,8 +20,8 @@ def translate_Transformer(batch, fields, model, device, max_decode_len):
     '''
     transformer sentence translate
     '''
-    src = batch.src
-    TRG_FIELD = fields['trg']
+    src = batch.grapheme
+    TRG_FIELD = fields['phoneme']
 
     enc_src = model.encoder(src)
     trg_idx = [TRG_FIELD.vocab.stoi[TRG_FIELD.init_token]]
@@ -44,8 +45,8 @@ def translate_Transformer_beam_search(batch, fields, model, device, beam_size, m
     '''
     Transformer beam search
     '''
-    src = batch.src
-    TRG_FIELD = fields['trg']
+    src = batch.grapheme
+    TRG_FIELD = fields['phoneme']
 
     model.eval()
     with torch.no_grad():
@@ -145,8 +146,8 @@ def translate_LSTM(batch, fields, model, device, max_decode_len):
     '''
     biLSTM sentence translate
     '''
-    src = batch.src
-    TRG_FIELD = fields['trg']
+    src = batch.grapheme
+    TRG_FIELD = fields['phoneme']
     init_token = TRG_FIELD.init_token
     eos_token = TRG_FIELD.eos_token
 
@@ -174,8 +175,8 @@ def translate_LSTM_beam_search(batch, fields, model, device, beam_size, max_deco
     '''
     biLSTM beam search
     '''
-    src = batch.src
-    TRG_FIELD = fields['trg']
+    src = batch.grapheme
+    TRG_FIELD = fields['phoneme']
 
     model.eval()
     with torch.no_grad():
@@ -285,8 +286,8 @@ def test(model, fields, device, test_iter, args, opt):
     i = 0
     for batch in tqdm(test_iter):
         if opt.model_type == 'Transformer':
-            src = batch.src.squeeze(0).data.tolist()
-            trg = batch.trg.squeeze(0).data.tolist()[1:-1]
+            src = batch.grapheme.squeeze(0).data.tolist()
+            trg = batch.phoneme.squeeze(0).data.tolist()[1:-1]
             if args.beam_search:
                 pred = translate_Transformer_beam_search(
                     batch, fields, model, device, args.beam_size, args.max_decode_len)
@@ -296,8 +297,8 @@ def test(model, fields, device, test_iter, args, opt):
                 pred = translate_Transformer(batch, fields, model, device, args.max_decode_len)
             
         if opt.model_type == 'LSTM':
-            src = batch.src.squeeze(1).data.tolist()
-            trg = batch.trg.squeeze(1).data.tolist()[1:-1]
+            src = batch.grapheme.squeeze(1).data.tolist()
+            trg = batch.phoneme.squeeze(1).data.tolist()[1:-1]
             if args.beam_search:
                 pred = translate_LSTM_beam_search(
                     batch, fields, model, device, args.beam_search, args.max_decode_len)
@@ -307,8 +308,8 @@ def test(model, fields, device, test_iter, args, opt):
                 pred = translate_LSTM(batch, fields, model, device, args.max_decode_len)
 
         data = {}
-        data['src'] = ' '.join([fields['src'].vocab.itos[s] for s in src])
-        data['trg'] = ' '.join([fields['trg'].vocab.itos[t] for t in trg])
+        data['grapheme'] = ' '.join([fields['grapheme'].vocab.itos[s] for s in src[1:-1]])
+        data['phoneme'] = ' '.join([fields['phoneme'].vocab.itos[t] for t in trg])
         data['predicted'] = ' '.join(pred)
         out.append(data)
 
@@ -317,8 +318,8 @@ def test(model, fields, device, test_iter, args, opt):
         json.dump(out, wf, ensure_ascii=False, indent='\t')
     
 def main(opt):
-    model_args_path = os.path.join('Seq2Seq/config', opt.model_type+'.json')
-    test_args_path = os.path.join('Seq2Seq/config', 'test_config.json')
+    model_args_path = os.path.join('G2P/config', opt.model_type+'.json')
+    test_args_path = os.path.join('G2P/config', 'test_config.json')
     with open(model_args_path, 'r', encoding='utf-8') as f:
         model_args = AttrDict(json.load(f))
     with open(test_args_path, 'r', encoding='utf-8') as f:
