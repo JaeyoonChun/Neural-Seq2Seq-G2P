@@ -21,13 +21,13 @@ def main(opt):
         assert model_args.vectors == True
     elif train_args.token_train:
         assert model_args.vectors == False
-    
+
     init_logger()
     set_seeds()
     device = load_device(train_args)
-
-    (train_iter, val_iter, _), fields = build_dataset(opt, train_args, device, model_args.vectors)
-    model = build_model(model_args, opt, fields, device)
+    
+    (train_iter, val_iter, _), fields = build_dataset(opt.model_type, train_args, device, model_args.vectors)
+    model = build_model(model_args, opt.model_type, fields, device)
     model = model.to(device)
     trainer = Trainer(train_args, opt, model, fields)
     trainer.train(train_iter, val_iter)

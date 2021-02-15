@@ -9,9 +9,9 @@ import logging
 import pickle
 logger = logging.getLogger(__name__)
 
-def build_dataset(opt, args, device, vectors):
+def build_dataset(model_type, args, device, vectors, n2w=False):
     batch_first = False
-    if opt.model_type == 'Transformer':
+    if model_type == 'Transformer':
         batch_first = True
         
     if args.word_train:
@@ -38,7 +38,7 @@ def build_dataset(opt, args, device, vectors):
     else:
         G_FIELD.build_vocab(train_data, val_data, test_data)
     P_FIELD.build_vocab(train_data, val_data, test_data)
-    
+
     logger.info(vars(train_data.examples[0]))
     logger.info(vars(val_data.examples[0]))
 
