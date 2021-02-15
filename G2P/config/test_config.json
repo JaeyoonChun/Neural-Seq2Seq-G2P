@@ -1,0 +1,17 @@
+{
+    "save_model_dir": "G2P/ckpt/final_model",
+    "data_dir": "./data",
+    "data_type": "korean",
+    "train_batch_size": 128,
+    "eval_batch_size": 1,
+    "word_train": false,
+    "token_train":true,
+    "device_num": 1,
+    "world_size": 1,
+    "beam_search": true,
+    "beam_size": 10,
+    "max_decode_len": 258,
+    "augmentation": false,
+    "forward": true,
+    "backward": true
+}

@@ -1,0 +1,14 @@
+{
+    "enc_emb_dim": 32,
+    "dec_emb_dim": 32,
+    "enc_hid_dim": 64,
+    "dec_hid_dim": 64,
+    "enc_dropout": 0.5,
+    "dec_dropout": 0.5,
+    "teacher_forcing_ratio": 0.5,
+    "vectors": false,
+    "n_layers": 1,
+    "param_init": 0.02,
+    "param_init_xavier": true,
+    "param_init_he": false
+}

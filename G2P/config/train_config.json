@@ -1,0 +1,23 @@
+{
+    "save_model_dir": "G2P/ckpt/LSTM",
+    "data_dir": "./data",
+    "data_type": "librispeech",
+    "train_batch_size": 64,
+    "eval_batch_size": 64,
+    "learning_rate": 0.0005,
+    "num_train_epochs": 10,
+    "weight_decay": 0,
+    "adam_epsilon": 1e-8,
+    "warmup_steps": 0,
+    "logging_steps": 1,
+    "save_steps": 1,
+    "gradient_accumulation_steps": 1,
+    "max_steps": 0,
+    "max_grad_norm": 1.0,
+    "eval_all_ckpts": true,
+    "early_cnt": 3,
+    "word_train": false,
+    "token_train":true,
+    "device_num": 0,
+    "world_size": 2
+}
