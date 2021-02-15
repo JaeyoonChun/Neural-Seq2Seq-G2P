@@ -17,8 +17,8 @@ pip install -r requirements.txt
 ```
 python main.py --model_mode [LSTM or Transformer]
 ```
+**Test**
 
-## Copyright
-
-본 프로젝트는 TensorFlow나 Numpy 등 공개소프트웨어를 이용하였으나, 데이터 처리 방법 및 모델 구현에 대한 저작권은 서강대학교 지능형 음성대화 인터페이스 연구실에 있습니다.
-
+```
+python prediction.py --model_mode [LSTM or Transformer]
+```
