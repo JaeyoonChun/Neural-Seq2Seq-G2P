@@ -16,7 +16,7 @@ class LSTMDecoder(nn.Module):
         self.teacher_forcing_ratio = teacher_forcing_ratio
 
         self.embedding = nn.Embedding(output_dim, emb_dim)
-        self.rnn = nn.LSTM((enc_hid_dim*2)+emb_dim, dec_hid_dim, n_layers, dropout=dropout)
+        self.rnn = nn.LSTM((enc_hid_dim*2)+emb_dim, dec_hid_dim, dropout=dropout)
         self.fc_out = nn.Linear((enc_hid_dim*2)+emb_dim+dec_hid_dim, output_dim)
         self.dropout = nn.Dropout(dropout)
         self.device = device
